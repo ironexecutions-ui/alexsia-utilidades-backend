@@ -1,0 +1,15 @@
+FastAPI
+
+Uvicorn
+
+PyJWT
+
+mysql-connector-python
+
+python-dotenv
+
+fpdf (FPDF)
+
+supabase (supabase-py)
+
+pytz
