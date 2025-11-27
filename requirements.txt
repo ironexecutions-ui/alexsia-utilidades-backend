@@ -1,15 +1,8 @@
-FastAPI
-
-Uvicorn
-
+fastapi
+uvicorn
 PyJWT
-
 mysql-connector-python
-
 python-dotenv
-
-fpdf (FPDF)
-
-supabase (supabase-py)
-
+fpdf2
+supabase
 pytz
