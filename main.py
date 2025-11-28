@@ -11,13 +11,20 @@ from rotas_painel_comercial import router as painel_router
 
 app = FastAPI()
 
-origins = ["*"]
+origins = [
+    "*", 
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://localhost:8000",
+    "https://alexsia-utilidades-8x70.onrender.com"
+]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_credentials=True,
 )
 
 app.include_router(login_router)
