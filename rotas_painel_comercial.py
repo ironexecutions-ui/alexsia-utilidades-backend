@@ -130,7 +130,7 @@ def registrar_venda(body: dict, authorization: str = Header(None)):
     pdf.set_font("Arial", "B", 14)
     pdf.cell(0, 12, f"Total pago: R$ {total:.2f}", ln=True, align="R")
 
-    pdf_output = pdf.output(dest="S").encode("latin1")
+    pdf_output = bytes(pdf.output(dest="S"))
     pdf_b64 = base64.b64encode(pdf_output).decode("utf-8")
 
     return {
