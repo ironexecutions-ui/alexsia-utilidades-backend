@@ -6,3 +6,4 @@ python-dotenv
 fpdf2
 supabase
 pytz
+python-multipart
