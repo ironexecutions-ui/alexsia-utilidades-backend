@@ -35,6 +35,4 @@ app.include_router(usuarios_router)
 app.include_router(desempenho_router)
 app.include_router(painel_router)
 
-@app.get("/perfil")
-def teste_perfil():
-    return {"email": "teste@loja.com", "funcao": "admin"}
+
