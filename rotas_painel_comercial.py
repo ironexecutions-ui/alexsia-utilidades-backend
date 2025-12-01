@@ -160,3 +160,32 @@ def buscar_por_nome(q: str, authorization: str = Header(None)):
     )
 
     return {"status": "ok", "produtos": produtos}
+# ------------------------------------------------------------
+# ROTA 3: ATUALIZAR PREÇO DO PRODUTO
+# ------------------------------------------------------------
+@router.put("/painel/atualizar-preco")
+def atualizar_preco(body: dict, authorization: str = Header(None)):
+
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Token ausente")
+
+    if authorization.startswith("Bearer "):
+        authorization = authorization.replace("Bearer ", "").strip()
+
+    validar_token(authorization)
+
+    produto_id = body.get("id")
+    novo_preco = body.get("preco")
+
+    if not produto_id or novo_preco is None:
+        raise HTTPException(status_code=400, detail="Dados incompletos")
+
+    try:
+        executar_insert(
+            "UPDATE produtos SET preco_venda = %s WHERE id = %s",
+            (float(novo_preco), produto_id)
+        )
+    except:
+        raise HTTPException(status_code=500, detail="Erro ao atualizar o preço")
+
+    return {"status": "ok", "mensagem": "Preço atualizado com sucesso"}
