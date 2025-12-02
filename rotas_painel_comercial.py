@@ -189,3 +189,72 @@ def atualizar_preco(body: dict, authorization: str = Header(None)):
         raise HTTPException(status_code=500, detail="Erro ao atualizar o preço")
 
     return {"status": "ok", "mensagem": "Preço atualizado com sucesso"}
+@router.get("/fechamento/20dias")
+def fechamento_20dias(authorization: str = Header(None)):
+
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Token ausente")
+
+    if authorization.startswith("Bearer "):
+        authorization = authorization.replace("Bearer ", "").strip()
+
+    validar_token(authorization)
+
+    query = """
+        SELECT 
+            CASE
+                WHEN TIME(data_hora) >= '04:00:00' THEN DATE(data_hora)
+                ELSE DATE(DATE_SUB(data_hora, INTERVAL 1 DAY))
+            END AS dia_comercial,
+            SUM(preco_pago) AS total_dia
+        FROM vendas_itens
+        GROUP BY dia_comercial
+        ORDER BY dia_comercial DESC
+        LIMIT 20
+    """
+
+    dias = executar_select(query)
+
+    if not dias:
+        return {
+            "diaAtual": {
+                "data": None,
+                "total": 0
+            },
+            "ultimos20dias": []
+        }
+
+    ultimo = dias[0]["dia_comercial"]
+
+    ultimo_str = ultimo.strftime("%Y-%m-%d")
+
+    soma_atual = executar_select(
+        """
+        SELECT 
+            SUM(preco_pago) AS total_dia
+        FROM vendas_itens
+        WHERE 
+            CASE
+                WHEN TIME(data_hora) >= '04:00:00' THEN DATE(data_hora)
+                ELSE DATE(DATE_SUB(data_hora, INTERVAL 1 DAY))
+            END = %s
+        """,
+        (ultimo_str,)
+    )
+
+    total_atual = soma_atual[0]["total_dia"] if soma_atual[0]["total_dia"] else 0
+
+    ultimos = []
+    for d in dias:
+        ultimos.append({
+            "data": d["dia_comercial"].strftime("%Y-%m-%d"),
+            "total": float(d["total_dia"])
+        })
+
+    return {
+        "diaAtual": {
+            "data": ultimo_str,
+            "total": float(total_atual)
+        },
+        "ultimos20dias": ultimos
+    }
