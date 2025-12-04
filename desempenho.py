@@ -49,35 +49,68 @@ def maiores_menores(
         "menores": menores
     }
 @router.get("/desempenho/historico")
-def historico(
+def historico_vendas(
     pagina: int = Query(1),
-    limite: int = Query(10)
+    limite: int = Query(7)
 ):
     offset = (pagina - 1) * limite
 
-    sql = """
-        SELECT
-            vi.venda_numero,
-            vi.produto_id,
-            p.nome AS nome_produto,
-            vi.quantidade,
-            vi.preco_pago,
-            vi.data_hora,
-            vi.usuario_nome,
-            (
-                SELECT SUM(preco_pago)
-                FROM vendas_itens
-                WHERE venda_numero = vi.venda_numero
-            ) AS total_venda
-        FROM vendas_itens vi
-        JOIN produtos p ON p.id = vi.produto_id
-        ORDER BY vi.data_hora ASC
+    # Busca as vendas desejadas
+    vendas = executar_select(
+        """
+        SELECT 
+            v.venda_numero,
+            v.usuario_nome,
+            v.data_hora,
+            SUM(v.preco_pago) AS total_venda
+        FROM vendas_itens v
+        GROUP BY v.venda_numero, v.usuario_nome, v.data_hora
+        ORDER BY v.venda_numero DESC
         LIMIT %s OFFSET %s
-    """
+        """,
+        (limite, offset)
+    )
 
-    resultado = executar_select(sql, (limite, offset))
+    if not vendas:
+        return {"historico": []}
+
+    # Extrai apenas os números das vendas que serão exibidas
+    ids = tuple([v["venda_numero"] for v in vendas])
+
+    # Previne erro se só houver uma venda
+    if len(ids) == 1:
+        ids = f"({ids[0]})"
+
+    # Busca itens de todas as vendas selecionadas de uma vez só
+    itens = executar_select(
+        f"""
+        SELECT 
+            v.venda_numero,
+            p.nome AS nome_produto,
+            v.quantidade,
+            v.preco_pago
+        FROM vendas_itens v
+        JOIN produtos p ON p.id = v.produto_id
+        WHERE v.venda_numero IN {ids}
+        ORDER BY v.venda_numero DESC
+        """
+    )
+
+    resultado = []
+
+    for venda in vendas:
+        venda_itens = [i for i in itens if i["venda_numero"] == venda["venda_numero"]]
+
+        resultado.append({
+            "venda_numero": venda["venda_numero"],
+            "usuario_nome": venda["usuario_nome"],
+            "data_hora": venda["data_hora"].strftime("%Y-%m-%d %H:%M:%S"),
+            "total_venda": float(venda["total_venda"]),
+            "itens": venda_itens
+        })
 
     return {"historico": resultado}
+
 @router.get("/desempenho/graficos")
 def graficos():
 
